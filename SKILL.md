@@ -784,7 +784,7 @@ curl -s -X POST "https://api.commonpaper.com/v1/accounts" \
   -d '{"email":"NEW_USER_EMAIL","name":"NEW_USER_NAME","org_name":"NEW_ORG_NAME"}'
 ```
 
-All three fields are required. The new user is created as an admin of the new org. The response includes `api_key` (the production-bucket key the agent uses from here on), `user_id`, and `organization_id`. Auth0 also queues a verification email and a password reset email to the new user's address.
+All three fields are required. The new user is created as an admin of the new org. The response includes `api_key` (the production-bucket key the agent uses from here on), `user_id`, and `organization_id`. We also queue up two emails to the new user's address: One is a verification email and the other is a password reset email.
 
 Possible non-201 responses:
 - **404 Not Found** — provision key doesn't exist
@@ -816,7 +816,7 @@ After Step 2, the new account is ready for most read and setup work without furt
 - Org info: read, update
 - Users: read
 
-What's still gated until the new user clicks the Auth0 verification link:
+What's still gated until the new user clicks the email verification link:
 - `POST /v1/agreements/{id}/send` — and any agreement create that omits `draft: true` (since that immediately sends). Surfaces as 403 with a "plan limit" message, which is misleading — it's actually the verification gate.
 - `test_agreement: true` bypasses plan limits but still requires verification before send.
 
