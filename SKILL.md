@@ -87,6 +87,23 @@ GET /v1/agreements
 
 Paginated — default page size is 15 (override with `page[size]`).
 
+**Compact vs full list responses:** By default, the list response omits type-specific nested attributes (such as `csa`, `csa_order_form`, `dpa`, `baa`, and other agreement-type sub-models). Pass `full=true` to include those nested attributes in the list response. Use `GET /v1/agreements/{id}` when you only need one agreement's full details.
+
+```
+GET /v1/agreements?full=true
+```
+
+URL-encoded: `full=true` (no brackets). Combine with filters and pagination, e.g. `filter%5Bstatus_eq%5D=signed&full=true&page%5Bsize%5D=100`.
+
+**When to use `full=true` on list:**
+- You need nested fee/term data from multiple agreements in one pass (e.g., `csa_order_form.fees`, `csa.include_covered_claims`)
+- You're building a report that requires type-specific fields without fetching each agreement individually
+
+**When the compact list is enough:**
+- Counting agreements (`meta.pagination.records`)
+- Listing counterparties, statuses, dates, and summary fields
+- Most search/filter questions about who signed what
+
 Returns JSONAPI format with pagination metadata:
 ```json
 {
@@ -199,6 +216,20 @@ GET   /v1/templates/{id}     — Get single template
 POST  /v1/templates          — Create a new template
 PATCH /v1/templates/{id}     — Update an existing template
 ```
+
+**Compact vs full list responses:** By default, the templates list includes shared attributes only (name, version, roles, `agreement_type`, etc.). Type-specific attributes and nested objects (such as `governing_law_region`, `template_csa_order_form`, or `template_psa_statement_of_work`) are excluded. Pass `full=true` to include those in the list response. Use `GET /v1/templates/{id}` when you only need one template's full configuration.
+
+```
+GET /v1/templates?full=true
+```
+
+**When to use `full=true` on list:**
+- Inspecting order form defaults, fees, or type-specific settings across multiple templates
+- Comparing template configurations without a separate GET per template
+
+**When the compact list is enough:**
+- Finding a template ID by type (`type == "template_nda"`)
+- Listing template names for the user to pick from
 
 Templates have a `type` field in the response indicating the agreement type: `template_nda`, `template_csa`, `template_dpa`, `template_design`, `template_psa`, `template_partnership`, `template_baa`, `template_loi`, `template_software_license`, `template_pilot`.
 
@@ -581,6 +612,8 @@ These list endpoints are paginated and share the same defaults:
 - `GET /v1/templates`
 - `GET /v1/agreement_history`
 
+`GET /v1/agreements` and `GET /v1/templates` also accept `full=true` to return type-specific nested attributes in list responses (see those endpoint sections above). Default list responses are compact.
+
 They return pagination metadata in `meta.pagination`:
 - `records` — total number of matching results (use this for counts!)
 - `current` — current page number
@@ -630,7 +663,7 @@ curl -s $AUTH \
   | jq '[.data[] | {counterparty: .attributes.recipient_organization, gmv: (.attributes.ai_gmv // "0" | tonumber), summary: .attributes.summary}] | sort_by(-.gmv)'
 ```
 
-Note: `ai_gmv` may be `"0"` or null for some agreements even if fees exist — check the `summary` field and nested fee data (`csa_order_form.fees`) for the full picture.
+Note: `ai_gmv` may be `"0"` or null for some agreements even if fees exist — check the `summary` field and nested fee data (`csa_order_form.fees`) for the full picture. Nested fee data is not included in the default list response; pass `full=true` on the list call or fetch individual agreements with `GET /v1/agreements/{id}`.
 
 ### "Upcoming renewal dates?"
 
@@ -689,7 +722,7 @@ To update an existing template:
 To create an agreement:
 
 1. **Look up the sender** using `GET /v1/users` to get their name, title, and email
-2. **Look up the template** using `GET /v1/templates` and find the one matching the desired type (e.g., `type == "template_nda"`)
+2. **Look up the template** using `GET /v1/templates` and find the one matching the desired type (e.g., `type == "template_nda"`). The compact list is sufficient for ID lookup; use `full=true` or `GET /v1/templates/{id}` only if you need to read template defaults before creating.
 3. **Confirm details** with the user — be explicit about what you're going to do before you do it (a Cowork user may be watching without having initiated the request)
 4. **POST to `/v1/agreements`** with `draft: true` by default:
 
@@ -1009,6 +1042,7 @@ Look up the org ID from `attributes.organization_id` on any template response (n
 - When a user asks about a company, search both `recipient_organization` and `sender_organization` fields since either party could be the counterparty
 - For "active" or "current" agreements, filter on `status_eq=signed` combined with `expired_eq=false` or `end_date_gteq={today}`
 - The API returns JSONAPI format for reads — data is in `response.data[].attributes`
+- List endpoints for agreements and templates return compact payloads by default; pass `full=true` when you need nested type-specific attributes in list responses
 - The API uses a **different format for creates** — NOT JSONAPI. Use `owner_email`, `template_id`, and `agreement` as top-level keys.
 - Use `jq` for parsing JSON responses in curl commands
 - When showing users the curl command you used, replace the auth header with `$CP_TOKEN` placeholder and ensure brackets are URL-encoded
