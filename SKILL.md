@@ -197,12 +197,11 @@ POST /v1/agreements
 
 ### Presenting an agreement to a counterparty
 
-Common Paper agreements follow a **Cover Page + Standard Terms** model: the short cover page holds the deal-specific choices (parties, term, fees, governing law) and incorporates the publicly published, version-numbered standard terms by reference. Counterparties who haven't seen Common Paper before sometimes hesitate ("do I need a lawyer to review this?"), and a sentence of explanation up front prevents that.
+Common Paper agreements use a **Cover Page + Standard Terms** structure: the cover page holds the deal-specific terms (parties, term, fees, governing law), and incorporates the published, version-numbered standard terms by reference. 
 
-When sending an agreement to a first-time counterparty:
+For counterparties unfamiliar with this model, use `agreement.message` to include a short note with the agreement email, e.g. "This is a Common Paper standard agreement. The terms are published at https://commonpaper.com/standards. Only the cover page is specific to this deal."
 
-- Use the optional `agreement.message` field to carry a short plain-language note with the agreement email. For example: this is a Common Paper standard agreement whose terms are published openly at commonpaper.com/standards, and only the cover page is specific to this deal.
-- Common Paper publishes a one-page explainer, ["Why We Use Common Paper Standard Agreements"](https://commonpaper.com/wp-content/uploads/2022/05/Why-We-Use-Common-Paper-Standard-Agreements.pdf), that can be linked or attached in the surrounding email conversation to answer the "what is this?" question before it's asked.
+Common Paper also publishes a one-page explainer, ["Why We Use Common Paper Standard Agreements"](https://commonpaper.com/wp-content/uploads/2022/05/Why-We-Use-Common-Paper-Standard-Agreements.pdf), which can be linked or attached separately if more context is needed.
 
 ### Agreement Actions
 
