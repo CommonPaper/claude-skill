@@ -193,6 +193,15 @@ POST /v1/agreements
 
 **Other fields:**
 - `agreement.manual_send` — set to `true` to mark the agreement as manually sent outside the platform
+- `agreement.message` — optional plain-language note included when the agreement is sent to the recipient
+
+### Presenting an agreement to a counterparty
+
+Common Paper agreements use a **Cover Page + Standard Terms** structure: the cover page holds the deal-specific terms (parties, term, fees, governing law), and incorporates the published, version-numbered standard terms by reference. 
+
+For counterparties unfamiliar with this model, use `agreement.message` to include a short note with the agreement email, e.g. "This is a Common Paper standard agreement. The terms are published at https://commonpaper.com/standards. Only the cover page is specific to this deal."
+
+Common Paper also publishes a one-page explainer, ["Why We Use Common Paper Standard Agreements"](https://commonpaper.com/wp-content/uploads/2022/05/Why-We-Use-Common-Paper-Standard-Agreements.pdf), which can be linked or attached separately if more context is needed.
 
 ### Agreement Actions
 
