@@ -561,7 +561,7 @@ Publishing a new version takes the same `body` shape at `POST /v1/custom_terms/{
 
 **File terms (uploaded Word documents):** shipping soon; verify availability before relying on it. Send `multipart/form-data` with `term_type=file` and a `docx` file part (curl needs the `@` prefix) to the same create and versions endpoints. The docx converts to a pdf asynchronously; poll the term's `conversion_status` attribute (`processing`, `ready`, `failed`) after uploading. If the endpoint rejects `term_type=file`, the feature is not deployed yet and file terms must be managed in the web app.
 
-**Creating a custom template:** send a `name` and a YAML `definition` describing the cover page. Field inputs include text, textarea, markdown, date, number, currency, radio, select, multiselect, email, states, address, rate, fixed, and header. Sections can be `required: true` (always shown) or optional with an include checkbox (`included: false` to default unchecked). An `import: governing_law` section adds the standard governing law picker and takes `defaults` for `governing_law_region` and `chosen_courts_region`.
+**Creating a custom template:** send a `name` and a YAML `definition` describing the cover page. Field inputs include text, textarea, markdown, date, number, currency, radio, select, multiselect, email, states, address, rate, fixed, and header. **Default every section to `required: true`** so it always appears in the agreement; only make a section optional (which adds an include checkbox on the form, `included: false` to default it unchecked) when the user asks for a section to be optional or the source document marks it as removable. An `import: governing_law` section adds the standard governing law picker and takes `defaults` for `governing_law_region` and `chosen_courts_region`.
 
 ```yaml
 title: Consulting Agreement
@@ -571,12 +571,14 @@ parties:
   recipient: Contractor
 sections:
   - heading: Services
+    required: true
     fields:
       services:
         label: Description of services
         input: textarea
         required: true
   - import: governing_law
+    required: true
     defaults:
       governing_law_region: Delaware
       chosen_courts_region: Delaware
