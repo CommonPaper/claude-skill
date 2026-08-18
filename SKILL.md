@@ -559,7 +559,7 @@ curl -s -X POST "https://api.commonpaper.com/v1/custom_terms" \
 
 Publishing a new version takes the same `body` shape at `POST /v1/custom_terms/{id}/versions`. The new version immediately becomes the one new agreements use.
 
-**File terms (uploaded Word documents):** shipping soon; verify availability before relying on it. Send `multipart/form-data` with `term_type=file` and a `docx` file part (curl needs the `@` prefix) to the same create and versions endpoints. The docx converts to a pdf asynchronously; poll the term's `conversion_status` attribute (`processing`, `ready`, `failed`) after uploading. If the endpoint rejects `term_type=file`, the feature is not deployed yet and file terms must be managed in the web app.
+**File terms (uploaded Word documents):** send `multipart/form-data` with `term_type=file` and a `docx` file part (curl needs the `@` prefix) to the same create and versions endpoints. The docx converts to a pdf asynchronously; poll the term's `conversion_status` attribute (`processing`, `ready`, `failed`) after uploading.
 
 **Creating a custom template:** send a `name` and a YAML `definition` describing the cover page. Field inputs include text, textarea, markdown, date, number, currency, radio, select, multiselect, email, states, address, rate, fixed, and header. **When converting a document into a template, create a section for every input the contract collects** (parties, descriptions, dates, rates, payment terms, and so on); do not drop or merge inputs the document asks for. **Default every section to `required: true`** so it always appears in the agreement; only make a section optional (which adds an include checkbox on the form, `included: false` to default it unchecked) when the user asks for a section to be optional or the source document marks it as removable. An `import: governing_law` section adds the standard governing law picker and takes `defaults` for `governing_law_region` and `chosen_courts_region`.
 
@@ -584,7 +584,7 @@ sections:
       chosen_courts_region: Delaware
 ```
 
-**Linking terms to a template** is currently web-only: open the template in the Common Paper app and pick the terms in its custom terms dropdown. Without the link, agreements created from the template render with no terms. API support for a `custom_term_id` parameter on template create/update is in review; if passing it has no effect, the link still has to be made in the app.
+**Linking terms to a template:** pass `custom_term_id` when creating or updating the template; the terms must belong to the same organization, and an empty string unlinks them. Without a link, agreements created from the template render with no terms.
 
 **Creating agreements from a custom template:** use the normal `POST /v1/agreements` with the template's UUID as `template_id`, and put cover page answers in `agreement.custom_field_values` keyed by the YAML field keys. Governing law answers also go inside `custom_field_values` (as `governing_law_region`, `chosen_courts_region`), not as top-level agreement attributes.
 
