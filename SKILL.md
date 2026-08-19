@@ -524,6 +524,39 @@ PATCH /v1/custom_templates/{id}           — Rename
 
 Write endpoints require `user_email` or `user_id` identifying a user in the organization, recorded as the creator.
 
+**Porting an existing contract into custom terms (IMPORTANT):** When the source is an existing contract (a Word document, PDF, or pasted text), the published body must be character-for-character identical to the source text. The structural markup described below — the nested ordered list and bolded titles — is the only thing you add.
+
+- **Never correct anything in transit** — not typos, not grammar, not punctuation, not capitalization. Executed agreements incorporate these terms by reference, so a silent "improvement" is an unauthorized edit to a legal document that the user has no way to notice. If you spot something that looks wrong, collect it and present a list of proposed corrections AFTER publishing, for the user to accept or decline.
+- **Watch for typographic characters that get silently flattened to ASCII.** A single Word contract routinely holds dozens of these. They survive extraction intact and are lost only when text is retyped by hand:
+
+  | Source character | Codepoint | Flattens to | Codepoint |
+  |---|---|---|---|
+  | ’ (curly apostrophe) | U+2019 | ' | U+0027 |
+  | “ ” (curly quotes) | U+201C / U+201D | " | U+0022 |
+  | — (em dash) | U+2014 | - | U+002D |
+  | … (ellipsis) | U+2026 | ... | U+002E ×3 |
+  | non-breaking space | U+00A0 | regular space | U+0020 |
+
+- **Never retype contract text into a request payload.** Extract the source to a file and send that file's exact contents programmatically (e.g., build the JSON payload with a script that reads the file), so no human transcription sits between extraction and upload.
+- **Verify after writing, not just before.** Re-fetch the stored body with `GET /v1/custom_terms/{id}` and assert every source paragraph survives verbatim. A cheap pre-check: the per-character counts of each non-ASCII character must match between source and stored body. Full check — strip only the markup you added, then assert nothing from the source is missing:
+
+  ```python
+  import re
+
+  def norm(text):
+      text = text.replace("**", "")                        # bold markers we added
+      text = re.sub(r"(?m)^\s*(\d+|[a-z])\.\s+", "", text) # list numbering we added
+      return re.sub(r"\s+", " ", text)
+
+  stored = norm(open("stored_body.md").read())
+  for para in open("source.txt").read().split("\n\n"):
+      para = norm(para).strip()
+      assert para in stored, f"MISSING FROM STORED BODY: {para[:80]}..."
+  print("all source paragraphs verified verbatim")
+  ```
+
+- **If terms are already published with drift**, publish a corrected version via `POST /v1/custom_terms/{id}/versions`, and tell the user the flawed version stays in the version history since versions are immutable.
+
 **Markdown formatting for terms bodies (IMPORTANT):** Common Paper renders custom terms with legal numbering generated from nested ordered lists, not from text. Structure the entire terms document as ONE continuous nested numbered list:
 
 - Top-level list items are the sections. They render with bold numbers ("1.", "2."). Bold the section title: `1. **Services & Restrictions**`
@@ -1130,6 +1163,7 @@ Look up the org ID from `attributes.organization_id` on any template response (n
 ## Notes
 
 - **NEVER expose the API token in chat output or as a literal in commands**
+- **Never alter contract text when porting it into custom terms** — no corrections, no quote or dash substitutions; see "Porting an existing contract into custom terms" under Custom Terms and Custom Templates
 - **Always URL-encode square brackets** in query parameters — use `%5B` for `[` and `%5D` for `]`. Unencoded brackets cause zsh errors.
 - The `_cont` predicate is the best choice for company name searches since it handles partial and case-insensitive matching
 - When a user asks about a company, search both `recipient_organization` and `sender_organization` fields since either party could be the counterparty
