@@ -540,19 +540,22 @@ Write endpoints require `user_email` or `user_id` identifying a user in the orga
 - **Never retype contract text into a request payload.** Extract the source to a file and send that file's exact contents programmatically (e.g., build the JSON payload with a script that reads the file), so no human transcription sits between extraction and upload.
 - **Verify after writing, not just before.** Re-fetch the stored body with `GET /v1/custom_terms/{id}` and assert every source paragraph survives verbatim. A cheap pre-check: the per-character counts of each non-ASCII character must match between source and stored body. Full check — strip only the markup you added, then assert nothing from the source is missing:
 
-  ```python
-  import re
+  ```bash
+  # source.txt = extracted source text; stored_body.md = re-fetched body
+  stored="$(sed -E -e 's/\*\*//g' \
+    -e 's/^[[:space:]]*([0-9]+|[a-z])\.[[:space:]]+//' stored_body.md \
+    | tr -s '[:space:]' ' ')"
 
-  def norm(text):
-      text = text.replace("**", "")                        # bold markers we added
-      text = re.sub(r"(?m)^\s*(\d+|[a-z])\.\s+", "", text) # list numbering we added
-      return re.sub(r"\s+", " ", text)
-
-  stored = norm(open("stored_body.md").read())
-  for para in open("source.txt").read().split("\n\n"):
-      para = norm(para).strip()
-      assert para in stored, f"MISSING FROM STORED BODY: {para[:80]}..."
-  print("all source paragraphs verified verbatim")
+  awk 'BEGIN{RS=""}
+  {
+    n=split($0, L, "\n"); out=""
+    for (i=1; i<=n; i++) { sub(/^[ \t]*([0-9]+|[a-z])\. +/, "", L[i]); out = out " " L[i] }
+    gsub(/\*\*/, "", out); gsub(/[ \t]+/, " ", out)
+    sub(/^ /, "", out); sub(/ $/, "", out)
+    if (out != "") print out
+  }' source.txt | while IFS= read -r p; do
+    [[ "$stored" == *"$p"* ]] || { echo "MISSING FROM STORED BODY: ${p:0:80}..."; exit 1; }
+  done && echo "all source paragraphs verified verbatim"
   ```
 
 - **If terms are already published with drift**, publish a corrected version via `POST /v1/custom_terms/{id}/versions`, and tell the user the flawed version stays in the version history since versions are immutable.
