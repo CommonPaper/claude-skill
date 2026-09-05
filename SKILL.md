@@ -519,7 +519,7 @@ GET   /v1/custom_templates                — List templates
 GET   /v1/custom_templates/{id}           — Get one template including its YAML definition
 POST  /v1/custom_templates                — Create a template from a YAML definition
 POST  /v1/custom_templates/{id}/versions  — Publish a new definition version
-PATCH /v1/custom_templates/{id}           — Rename
+PATCH /v1/custom_templates/{id}           — Rename or swap the linked custom terms
 ```
 
 Write endpoints require `user_email` or `user_id` identifying a user in the organization, recorded as the creator.
@@ -621,6 +621,8 @@ sections:
 ```
 
 **Linking terms to a template:** pass `custom_term_id` when creating or updating the template; the terms must belong to the same organization, and an empty string unlinks them. Without a link, agreements created from the template render with no terms.
+
+**Template versions record their terms:** each template version stores the `custom_term_id` it was published with (returned on version responses along with `version_number`; template responses report `current_version_number`). Changing a template's terms via PATCH publishes a new version recording the swap — pass `user_id` to record who made it. Publishing a definition identical to the current version with the same linked terms is a no-op: the current version comes back with a 200 instead of a 201 and nothing new is created. So after any template write, read `current_version_number` to confirm whether a version was actually published.
 
 **Creating agreements from a custom template:** use the normal `POST /v1/agreements` with the template's UUID as `template_id`, and put cover page answers in `agreement.custom_field_values` keyed by the YAML field keys. Governing law answers also go inside `custom_field_values` (as `governing_law_region`, `chosen_courts_region`), not as top-level agreement attributes.
 
